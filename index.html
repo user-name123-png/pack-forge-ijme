@@ -185,6 +185,9 @@
     font-family:'Manrope',sans-serif; padding:0; text-decoration:underline; text-underline-offset:2px;
   }
   .link-btn:hover{color:var(--gold);}
+  .danger-link{color:var(--danger);}
+  .danger-link:hover{color:#e67057;}
+  
   .crop-hint{font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;}
 
   .field{margin-bottom:18px;}
@@ -379,6 +382,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         <span class="txt" id="soundTxt">คลิกเพื่อเลือกไฟล์เสียง <b>.ogg</b></span>
       </label>
+      
+      <div id="soundControls" style="display:none; margin-top: 10px; text-align: right;">
+        <button class="link-btn danger-link" id="removeSoundBtn" type="button">✖ ลบเสียงนี้ออก (ใช้เสียงเดิม)</button>
+      </div>
+
       <div class="sound-warn" id="soundWarn">รองรับเฉพาะไฟล์ .ogg เท่านั้น (แปลงไฟล์ mp3/wav เป็น ogg ก่อนอัปโหลด)</div>
       <div class="note-box">ถ้า<b>ไม่เลือกไฟล์เสียง</b> จะใช้เสียงเดิมของเกมตามปกติ ไม่มีการแก้ไขใด ๆ</div>
     </div>
@@ -457,7 +465,6 @@
 
     const c = { img:null, natW:0, natH:0, cx:0, cy:0, size:0, ready:false };
 
-    // Update 1: Change clamping logic to allow zooming out properly
     function clamp(){
       const half = c.size/2;
       const minX = Math.min(half, c.natW - half);
@@ -496,7 +503,6 @@
       reader.readAsDataURL(file);
     }
 
-    // Update 2: Clear file input value to allow selecting same file again
     inputEl.addEventListener('change', e=> {
       if(e.target.files.length > 0) {
         loadFile(e.target.files[0]);
@@ -535,7 +541,7 @@
     function pointerDown(e){
       if(!c.ready) return;
       dragging = true;
-      isClick = true; // reset click status
+      isClick = true; 
       const p = e.touches ? e.touches[0] : e;
       startX = p.clientX; startY = p.clientY; startCx = c.cx; startCy = c.cy;
       e.preventDefault();
@@ -545,7 +551,6 @@
       const p = e.touches ? e.touches[0] : e;
       const dx = p.clientX - startX, dy = p.clientY - startY;
       
-      // If moved more than 3px, it's a drag not a click
       if(Math.abs(dx) > 3 || Math.abs(dy) > 3) isClick = false;
       
       const scale = DISPLAY / c.size;
@@ -556,7 +561,6 @@
     }
     function pointerUp(e){
       if(!dragging) return;
-      // Trigger file selection if it was just a simple click on canvas
       if(isClick && (e.target === canvasEl || e.type === 'touchend')){
          inputEl.click();
       }
@@ -672,6 +676,9 @@
   const soundInput = document.getElementById('soundInput');
   const soundTxt = document.getElementById('soundTxt');
   const soundWarn = document.getElementById('soundWarn');
+  const soundControls = document.getElementById('soundControls');
+  const removeSoundBtn = document.getElementById('removeSoundBtn');
+
   soundInput.addEventListener('change', ()=>{
     const f = soundInput.files[0];
     if(!f) return;
@@ -679,11 +686,22 @@
       soundWarn.classList.add('show');
       state.soundFile = null;
       soundInput.value = '';
+      soundControls.style.display = 'none';
       return;
     }
     soundWarn.classList.remove('show');
     state.soundFile = f;
     soundTxt.innerHTML = 'เลือกแล้ว: <b>' + f.name + '</b> (คลิกเพื่อเปลี่ยน)';
+    soundControls.style.display = 'block'; // แสดงปุ่มลบเสียง
+  });
+
+  // ฟังก์ชันลบเสียง
+  removeSoundBtn.addEventListener('click', ()=>{
+    state.soundFile = null;
+    soundInput.value = '';
+    soundTxt.innerHTML = 'คลิกเพื่อเลือกไฟล์เสียง <b>.ogg</b>';
+    soundWarn.classList.remove('show');
+    soundControls.style.display = 'none'; // ซ่อนปุ่มลบเสียง
   });
 
   // ---- NAME fields ----
@@ -771,7 +789,8 @@
       }
 
       if(state.soundFile){
-        zip.file('assets/minecraft/sounds/item/totem/use_totem.ogg', state.soundFile);
+        // แก้ไขชื่อไฟล์เสียงสำหรับ Java
+        zip.file('assets/minecraft/sounds/item/totem/use.ogg', state.soundFile);
       }
 
       generatedFileName = fname + '.zip';
@@ -805,7 +824,8 @@
       }, null, 2));
 
       if(state.soundFile){
-        zip.file('sounds/random/use_totem.ogg', state.soundFile);
+        // แก้ไขชื่อไฟล์เสียงสำหรับ Bedrock
+        zip.file('sounds/random/totem.ogg', state.soundFile);
       }
 
       generatedFileName = fname + '.mcpack';
@@ -855,7 +875,10 @@
     mainCropper.reset(); popCropper.reset();
     popToggle.classList.remove('on'); popBody.style.display='none';
     packName.value=''; packDesc.value='';
-    soundInput.value=''; soundTxt.innerHTML = 'คลิกเพื่อเลือกไฟล์เสียง <b>.ogg</b>'; soundWarn.classList.remove('show');
+    soundInput.value=''; 
+    soundTxt.innerHTML = 'คลิกเพื่อเลือกไฟล์เสียง <b>.ogg</b>'; 
+    soundWarn.classList.remove('show');
+    soundControls.style.display = 'none'; // ซ่อนปุ่มเมื่อเริ่มใหม่
     document.getElementById('to-step-3').disabled = true;
     generatedBlob = null;
     goStep(1);
