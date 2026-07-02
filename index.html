@@ -218,7 +218,7 @@
 
   .note-box{
     background:var(--bg-deep); border:1px solid var(--line); border-radius:10px;
-    padding:12px 14px; font-size:12px; color:var(--muted); line-height:1.7; margin-top:12px;
+    padding:14px; font-size:12.5px; color:var(--muted); line-height:1.7; margin-top:12px;
   }
   .note-box b{color:var(--text);}
   .note-box.warn{border-color:#5c4426; color:#d8b98a;}
@@ -387,8 +387,15 @@
         <button class="link-btn danger-link" id="removeSoundBtn" type="button">✖ ลบเสียงนี้ออก (ใช้เสียงเดิม)</button>
       </div>
 
-      <div class="sound-warn" id="soundWarn">รองรับเฉพาะไฟล์ .ogg เท่านั้น (แปลงไฟล์ mp3/wav เป็น ogg ก่อนอัปโหลด)</div>
-      <div class="note-box">ถ้า<b>ไม่เลือกไฟล์เสียง</b> จะใช้เสียงเดิมของเกมตามปกติ ไม่มีการแก้ไขใด ๆ</div>
+      <div class="sound-warn" id="soundWarn">รองรับเฉพาะไฟล์ .ogg เท่านั้น (โปรดนำไฟล์ไปแปลงผ่านเว็บแปลงไฟล์ก่อนอัปโหลด)</div>
+      
+      <div class="note-box">
+        ถ้า<b>ไม่เลือกไฟล์เสียง</b> จะใช้เสียงเดิมของเกมตามปกติ
+        <br><br>
+        <span style="color:#d8b98a;">
+          <b>⚠️ คำเตือน:</b> ไฟล์ที่นำมาใช้ <u>ต้องผ่านการแปลงสกุลเป็น .ogg ด้วยโปรแกรมหรือเว็บ (เช่น Convertio) เท่านั้น</u> หากใช้วิธีคลิกขวาแล้ว Rename เปลี่ยนนามสกุลไฟล์เอาเองตรงๆ เกมจะอ่านไฟล์ไม่ออกและทำให้ไม่ได้ยินเสียงอะไรเลย
+        </span>
+      </div>
     </div>
 
     <div class="card">
@@ -692,16 +699,15 @@
     soundWarn.classList.remove('show');
     state.soundFile = f;
     soundTxt.innerHTML = 'เลือกแล้ว: <b>' + f.name + '</b> (คลิกเพื่อเปลี่ยน)';
-    soundControls.style.display = 'block'; // แสดงปุ่มลบเสียง
+    soundControls.style.display = 'block'; 
   });
 
-  // ฟังก์ชันลบเสียง
   removeSoundBtn.addEventListener('click', ()=>{
     state.soundFile = null;
     soundInput.value = '';
     soundTxt.innerHTML = 'คลิกเพื่อเลือกไฟล์เสียง <b>.ogg</b>';
     soundWarn.classList.remove('show');
-    soundControls.style.display = 'none'; // ซ่อนปุ่มลบเสียง
+    soundControls.style.display = 'none'; 
   });
 
   // ---- NAME fields ----
@@ -789,8 +795,8 @@
       }
 
       if(state.soundFile){
-        // แก้ไขชื่อไฟล์เสียงสำหรับ Java
-        zip.file('assets/minecraft/sounds/item/totem/use.ogg', state.soundFile);
+        // แก้ไขชื่อไฟล์ให้ถูกต้องตามโครงสร้าง Vanilla Java (ต้องเป็น use_totem.ogg)
+        zip.file('assets/minecraft/sounds/item/totem/use_totem.ogg', state.soundFile);
       }
 
       generatedFileName = fname + '.zip';
@@ -824,8 +830,20 @@
       }, null, 2));
 
       if(state.soundFile){
-        // แก้ไขชื่อไฟล์เสียงสำหรับ Bedrock
-        zip.file('sounds/random/totem.ogg', state.soundFile);
+        // สำหรับ Bedrock ต้องเพิ่ม sound_definitions.json เพื่อบังคับเกมให้อ่านไฟล์ custom ของเรา 
+        // แทนการไปดึงไฟล์ .fsb (รูปแบบบีบอัดใหม่ของตัวเกม)
+        zip.file('sounds/sound_definitions.json', JSON.stringify({
+          format_version: "1.14.0",
+          sound_definitions: {
+            "random.totem": {
+              category: "player",
+              sounds: [ "sounds/random/custom_totem" ]
+            }
+          }
+        }, null, 2));
+        
+        // เซฟไฟล์เสียงในชื่อที่เราสร้าง custom ไว้ใน definition ข้างต้น
+        zip.file('sounds/random/custom_totem.ogg', state.soundFile);
       }
 
       generatedFileName = fname + '.mcpack';
@@ -878,7 +896,7 @@
     soundInput.value=''; 
     soundTxt.innerHTML = 'คลิกเพื่อเลือกไฟล์เสียง <b>.ogg</b>'; 
     soundWarn.classList.remove('show');
-    soundControls.style.display = 'none'; // ซ่อนปุ่มเมื่อเริ่มใหม่
+    soundControls.style.display = 'none'; 
     document.getElementById('to-step-3').disabled = true;
     generatedBlob = null;
     goStep(1);
