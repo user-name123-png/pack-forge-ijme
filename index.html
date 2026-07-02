@@ -278,7 +278,6 @@
   </div>
   <p class="tag">สร้าง Resource Pack สำหรับ Minecraft Java หรือ Bedrock ด้วยรูปภาพของคุณเอง — ปรับตำแหน่ง/ขนาดรูป totem ได้ ใส่รูปตอน pop แยกได้ (Java) และเปลี่ยนเสียงตอน totem แตกได้</p>
 
-  <!-- STEP RAIL -->
   <div class="rail" id="rail">
     <div class="rail-item active" data-step="1"><div class="rail-num">1</div><div class="rail-label">เลือกแพลตฟอร์ม</div></div>
     <div class="rail-line"></div>
@@ -287,7 +286,6 @@
     <div class="rail-item" data-step="3"><div class="rail-num">3</div><div class="rail-label">ดาวน์โหลด</div></div>
   </div>
 
-  <!-- STEP 1 -->
   <section class="panel active" id="panel-1">
     <h2 class="step-title">เลือกแพลตฟอร์มของ Minecraft</h2>
     <p class="step-sub">รูปแบบไฟล์ resource pack ของ Java และ Bedrock ไม่เหมือนกัน เลือกให้ตรงกับเกมที่คุณเล่น</p>
@@ -311,12 +309,10 @@
     </div>
   </section>
 
-  <!-- STEP 2 -->
   <section class="panel" id="panel-2">
     <h2 class="step-title">ปรับแต่ง Totem ของคุณ</h2>
-    <p class="step-sub">ลากรูปเพื่อเลื่อนตำแหน่ง และใช้แถบเลื่อนเพื่อซูม ระบบจะไม่ขยายภาพเกินความละเอียดจริงเพื่อไม่ให้ pixel แตก</p>
+    <p class="step-sub">ลากรูปเพื่อเลื่อนตำแหน่ง และใช้แถบเลื่อนเพื่อซูม หากต้องการเปลี่ยนรูปสามารถคลิกบนรูปเดิมได้เลย</p>
 
-    <!-- MAIN IMAGE -->
     <div class="card">
       <div class="card-head">
         <h3 class="sub-title">รูปหลัก (ตอนถือ / ไอคอน)</h3>
@@ -334,7 +330,7 @@
         <div>
           <div class="crop-controls">
             <span class="zoom-label" id="zoomLabel-main">100%</span>
-            <input type="range" id="zoom-main" min="100" max="400" value="100" disabled>
+            <input type="range" id="zoom-main" min="10" max="400" value="100" disabled>
             <button class="link-btn" id="reset-main" type="button">รีเซ็ต</button>
           </div>
           <p class="crop-hint">ลากบนรูปเพื่อเลื่อนตำแหน่ง ใช้แถบเลื่อนเพื่อซูมเข้า/ออก รูปนี้ใช้ทั้งเป็นไอคอนหน้าปกและเท็กซ์เจอร์ตอนถือ totem</p>
@@ -342,7 +338,6 @@
       </div>
     </div>
 
-    <!-- POP IMAGE (Java only) -->
     <div class="card" id="pop-card">
       <div class="card-head">
         <h3 class="sub-title">รูปตอน Totem แตก (Pop)</h3>
@@ -364,7 +359,7 @@
           <div>
             <div class="crop-controls">
               <span class="zoom-label" id="zoomLabel-pop">100%</span>
-              <input type="range" id="zoom-pop" min="100" max="400" value="100" disabled>
+              <input type="range" id="zoom-pop" min="10" max="400" value="100" disabled>
               <button class="link-btn" id="reset-pop" type="button">รีเซ็ต</button>
             </div>
             <p class="crop-hint">รูปนี้จะแสดงเฉพาะตอน totem ถูกใช้ (หน้าจอเด้งขึ้นมา) เท่านั้น ส่วนตอนถือ/ในช่องไอเทมจะยังเป็นรูปหลัก</p>
@@ -374,7 +369,6 @@
       <div class="note-box warn" id="pop-note"></div>
     </div>
 
-    <!-- SOUND -->
     <div class="card">
       <div class="card-head">
         <h3 class="sub-title">เสียงตอน Totem แตก</h3>
@@ -389,7 +383,6 @@
       <div class="note-box">ถ้า<b>ไม่เลือกไฟล์เสียง</b> จะใช้เสียงเดิมของเกมตามปกติ ไม่มีการแก้ไขใด ๆ</div>
     </div>
 
-    <!-- NAME -->
     <div class="card">
       <div class="field">
         <label>ชื่อ RESOURCE PACK</label>
@@ -408,7 +401,6 @@
     </div>
   </section>
 
-  <!-- STEP 3 -->
   <section class="panel" id="panel-3">
     <h2 class="step-title">แพ็กของคุณพร้อมแล้ว</h2>
     <p class="step-sub">ดาวน์โหลดไฟล์ด้านล่าง แล้วนำไปติดตั้งตามขั้นตอน</p>
@@ -455,11 +447,7 @@
   }
 
   // ============================================================
-  // Cropper: lets the user pan (drag) and zoom a square crop that
-  // maps 1:1 onto the exported texture whenever possible. We track
-  // the crop window in SOURCE-image pixel space (cx, cy, size) so
-  // exporting never has to guess — it just reads the same rectangle
-  // at a higher resolution.
+  // Cropper logic
   // ============================================================
   function createCropper(opts){
     const { dropEl, inputEl, canvasEl, hintEl, zoomEl, zoomLabelEl, resetBtn, onChange } = opts;
@@ -469,10 +457,16 @@
 
     const c = { img:null, natW:0, natH:0, cx:0, cy:0, size:0, ready:false };
 
+    // Update 1: Change clamping logic to allow zooming out properly
     function clamp(){
-      const min = c.size/2;
-      c.cx = Math.min(Math.max(c.cx, min), c.natW - min);
-      c.cy = Math.min(Math.max(c.cy, min), c.natH - min);
+      const half = c.size/2;
+      const minX = Math.min(half, c.natW - half);
+      const maxX = Math.max(half, c.natW - half);
+      const minY = Math.min(half, c.natH - half);
+      const maxY = Math.max(half, c.natH - half);
+      
+      c.cx = Math.min(Math.max(c.cx, minX), maxX);
+      c.cy = Math.min(Math.max(c.cy, minY), maxY);
     }
 
     function redraw(){
@@ -502,12 +496,21 @@
       reader.readAsDataURL(file);
     }
 
-    inputEl.addEventListener('change', e=> loadFile(e.target.files[0]));
+    // Update 2: Clear file input value to allow selecting same file again
+    inputEl.addEventListener('change', e=> {
+      if(e.target.files.length > 0) {
+        loadFile(e.target.files[0]);
+        e.target.value = ''; 
+      }
+    });
+
     dropEl.addEventListener('dragover', e=>{ e.preventDefault(); dropEl.classList.add('dragover'); });
     dropEl.addEventListener('dragleave', ()=> dropEl.classList.remove('dragover'));
     dropEl.addEventListener('drop', e=>{
       e.preventDefault(); dropEl.classList.remove('dragover');
-      loadFile(e.dataTransfer.files[0]);
+      if(e.dataTransfer.files.length > 0){
+        loadFile(e.dataTransfer.files[0]);
+      }
     });
 
     zoomEl.addEventListener('input', ()=>{
@@ -527,11 +530,12 @@
       redraw();
     });
 
-    // drag to pan
-    let dragging = false, startX=0, startY=0, startCx=0, startCy=0;
+    // drag to pan & click detection
+    let dragging = false, startX=0, startY=0, startCx=0, startCy=0, isClick=true;
     function pointerDown(e){
       if(!c.ready) return;
       dragging = true;
+      isClick = true; // reset click status
       const p = e.touches ? e.touches[0] : e;
       startX = p.clientX; startY = p.clientY; startCx = c.cx; startCy = c.cy;
       e.preventDefault();
@@ -540,13 +544,25 @@
       if(!dragging) return;
       const p = e.touches ? e.touches[0] : e;
       const dx = p.clientX - startX, dy = p.clientY - startY;
+      
+      // If moved more than 3px, it's a drag not a click
+      if(Math.abs(dx) > 3 || Math.abs(dy) > 3) isClick = false;
+      
       const scale = DISPLAY / c.size;
       c.cx = startCx - dx/scale;
       c.cy = startCy - dy/scale;
       clamp(); redraw();
       e.preventDefault();
     }
-    function pointerUp(){ dragging = false; }
+    function pointerUp(e){
+      if(!dragging) return;
+      // Trigger file selection if it was just a simple click on canvas
+      if(isClick && (e.target === canvasEl || e.type === 'touchend')){
+         inputEl.click();
+      }
+      dragging = false;
+    }
+
     canvasEl.addEventListener('mousedown', pointerDown);
     window.addEventListener('mousemove', pointerMove);
     window.addEventListener('mouseup', pointerUp);
@@ -556,9 +572,6 @@
 
     function isReady(){ return c.ready; }
 
-    // Export the current crop window at up to maxSize. Never upscale
-    // beyond the crop's own native pixel count — that's what keeps
-    // pixel art crisp instead of blurry when zoomed in.
     function exportBlob(maxSize){
       return new Promise(resolve=>{
         const target = Math.min(Math.round(c.size), maxSize);
@@ -718,10 +731,7 @@
     const fname = safeFileName(state.name);
     const usePop = state.platform === 'java' && state.popEnabled && popCropper.isReady();
 
-    // Icon is just a thumbnail in menus, so a modest cap keeps file size sane.
     const iconBlob = await mainCropper.exportBlob(256);
-    // Item texture: keep native resolution (up to 512) so it never gets
-    // downsampled and loses detail.
     const mainBlob = await mainCropper.exportBlob(512);
     const popBlob = usePop ? await popCropper.exportBlob(512) : null;
 
@@ -748,12 +758,6 @@
           parent: 'minecraft:item/generated',
           textures: { layer0: 'minecraft:item/totem_of_undying_pop' }
         }, null, 2));
-        // Item model definition (Minecraft 1.21.4+): shows the "pop" model
-        // only in the "fixed" display context, which is what the totem-use
-        // screen animation renders with. Everything else (gui/held/ground)
-        // falls back to the normal model. Older clients simply don't read
-        // this file and use the legacy model above for everything — no crash,
-        // just no pop-swap.
         zip.file('assets/minecraft/items/totem_of_undying.json', JSON.stringify({
           model: {
             type: 'minecraft:select',
@@ -808,7 +812,6 @@
       generatedBlob = await zip.generateAsync({ type:'blob', mimeType:'application/octet-stream' });
     }
 
-    // populate result panel
     document.getElementById('resultPreview').src = URL.createObjectURL(iconBlob);
     document.getElementById('resultTitle').textContent = state.name;
     document.getElementById('resultFile').textContent = generatedFileName;
