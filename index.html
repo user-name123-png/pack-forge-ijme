@@ -141,7 +141,7 @@
     position:relative; overflow:hidden;
   }
   .drop:hover, .drop.dragover{border-color:var(--gold); background:var(--surface-hi);}
-  .drop img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; image-rendering:pixelated;}
+  .drop img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
   .drop .hint{font-size:11.5px; color:var(--muted); position:relative; z-index:1;}
   .drop .hint svg{width:26px;height:26px;display:block;margin:0 auto 6px;opacity:.6;}
   .drop.has-img .hint{display:none;}
@@ -184,7 +184,7 @@
   .result-preview{
     width:96px; height:96px; margin:0 auto 20px; border-radius:14px;
     overflow:hidden; border:2px solid var(--line);
-    image-rendering:pixelated; background:var(--bg-deep);
+    background:var(--bg-deep);
   }
   .result-preview img{width:100%;height:100%;object-fit:cover;}
   .result-card h3{font-family:'Silkscreen', monospace; font-size:16px; margin:0 0 8px;}
@@ -255,7 +255,7 @@
   <!-- STEP 2 -->
   <section class="panel" id="panel-2">
     <h2 class="step-title">อัปโหลดรูปภาพ &amp; ตั้งชื่อแพ็ก</h2>
-    <p class="step-sub">รูปนี้จะถูกใช้เป็นทั้งไอคอนหน้าปกของแพ็ก และเท็กซ์เจอร์ Totem of Undying ในเกม แนะนำภาพสี่เหลี่ยมจัตุรัส</p>
+    <p class="step-sub">รูปนี้จะถูกใช้เป็นทั้งไอคอนหน้าปกของแพ็ก และเท็กซ์เจอร์ Totem of Undying ในเกม ระบบจะคร็อปเป็นสี่เหลี่ยมจัตุรัสแล้ว<b style="color:var(--text)">เก็บความละเอียดต้นฉบับไว้โดยไม่ขยาย/ย่อโดยไม่จำเป็น</b> เพื่อไม่ให้ pixel แตกในเกม — แนะนำภาพสี่เหลี่ยมจัตุรัสความละเอียดสูง เช่น 64×64 ขึ้นไป</p>
     <div class="upload-row">
       <label class="drop" id="drop">
         <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp">
@@ -372,18 +372,24 @@
   }
   packName.addEventListener('input', checkReady);
 
-  // resize an image (dataURL) to a square canvas of given px size, return blob
-  function resizeToSquare(dataUrl, size){
+  // Crop an image to a centered square at its NATIVE resolution and only
+  // downscale if it exceeds maxSize. Never upscale — upscaling is what
+  // introduces blur/blockiness ("pixel แตก") in-game. Smoothing is only
+  // switched on for the downscale case (reduces moiré on big photos);
+  // it stays off otherwise so a 1:1 crop stays pixel-perfect.
+  function cropToSquareNative(dataUrl, maxSize){
     return new Promise(resolve=>{
       const img = new Image();
       img.onload = ()=>{
-        const canvas = document.createElement('canvas');
-        canvas.width = size; canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = size > Math.min(img.width, img.height);
         const side = Math.min(img.width, img.height);
+        const target = Math.min(side, maxSize);
+        const canvas = document.createElement('canvas');
+        canvas.width = target; canvas.height = target;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = target < side;
+        ctx.imageSmoothingQuality = 'high';
         const sx = (img.width - side)/2, sy = (img.height - side)/2;
-        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, target, target);
         canvas.toBlob(blob=> resolve(blob), 'image/png');
       };
       img.src = dataUrl;
@@ -421,8 +427,12 @@
 
   async function buildPack(){
     const zip = new JSZip();
-    const iconBlob = await resizeToSquare(state.imageDataUrl, state.platform==='java' ? 128 : 256);
-    const totemBlob = await resizeToSquare(state.imageDataUrl, 16);
+    // Icon is just a thumbnail in menus, so a modest cap keeps file size sane.
+    const iconBlob = await cropToSquareNative(state.imageDataUrl, 256);
+    // Item texture: keep native resolution (up to 512) so it never gets
+    // downsampled to 16×16 and loses detail — both Java and Bedrock render
+    // square item textures fine at any resolution.
+    const totemBlob = await cropToSquareNative(state.imageDataUrl, 512);
     const fname = safeFileName(state.name);
 
     if(state.platform === 'java'){
